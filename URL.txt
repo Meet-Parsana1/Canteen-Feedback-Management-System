@@ -1,0 +1,19 @@
+Admin Page: http://localhost:5173/admin
+Backend Data: http://localhost:5000/api/feedback
+Login Page: http://localhost:5173/login
+Signup Page: http://localhost:5173/signup
+
+
+LATEST:- 
+Student Dashboard: http://localhost:5173/dashboard
+Admin Dashboard: http://localhost:5173/admin
+Thank You Page: http://localhost:5173/thank-you
+Feedback Form: http://localhost:5173/
+Admin Login: http://localhost:5173/admin/login
+Admin Signup: http://localhost:5173/admin/signup
+
+
+
+
+
+

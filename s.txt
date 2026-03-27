@@ -1,0 +1,6 @@
+cluster password - Y6ADvW3gymFM6bH6
+Cluster Connection String(ORIGINAL) - mongodb+srv://meetparsana2203_db_user:uix9EgPkTKdeQgf0@cluster0.n6z54tg.mongodb.net/?appName=Cluster0
+
+
+Cluster Connection String(MODIFIED) - mongodb+srv://meetparsana2203_db_user:uix9EgPKTKeQgf0@cluster0.n6z54tg.mongodb.net/canteenDB?retryWrites=true&w=majority
+
