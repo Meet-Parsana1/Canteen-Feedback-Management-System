@@ -215,7 +215,14 @@ function AdminDashboard() {
             const start = new Date();
             start.setMonth(end.getMonth() - (range - 1));
 
-            setDateRange(`${start.toLocaleDateString()} - ${end.toLocaleDateString()}`);
+            const formatDate = (date) => {
+                  const day = String(date.getDate()).padStart(2, '0');
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const year = String(date.getFullYear()).slice(-2); // last 2 digits
+                  return `${day}/${month}/${year}`;
+            };
+
+            setDateRange(`${formatDate(start)} - ${formatDate(end)}`);
       };
 
       const exportExcel = () => {
