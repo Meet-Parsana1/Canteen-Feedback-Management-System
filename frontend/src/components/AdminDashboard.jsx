@@ -99,7 +99,14 @@ function AdminDashboard() {
             const monthly = {};
             const now = new Date();
 
-            data.forEach((item) => {
+            const monthlyFilteredData = data.filter((item) => {
+                  const date = new Date(item.createdAt);
+                  const diffMonths = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
+
+                  return diffMonths < monthlyRange;
+            });
+
+            monthlyFilteredData.forEach((item) => {
                   const date = new Date(item.createdAt);
 
                   // ✅ FILTER BASED ON SELECTED RANGE
