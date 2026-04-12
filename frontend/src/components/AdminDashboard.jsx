@@ -37,7 +37,7 @@ function AdminDashboard() {
       const [totalPages, setTotalPages] = useState(1);
       const [loading, setLoading] = useState(true);
       const [total, setTotal] = useState(0);
-      const [range, setRange] = useState(2); // default last 2 months
+      const [monthlyRange, setMonthlyRange] = useState(2);
 
       useEffect(() => {
             const token = localStorage.getItem('adminToken');
@@ -86,7 +86,7 @@ function AdminDashboard() {
 
       useEffect(() => {
             fetchFeedback();
-      }, [page, range]);
+      }, [page, monthlyRange]);
 
       const logout = () => {
             localStorage.removeItem('adminToken');
@@ -105,7 +105,7 @@ function AdminDashboard() {
                   // ✅ FILTER BASED ON SELECTED RANGE
                   const diffMonths = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
 
-                  if (diffMonths >= range) return;
+                  if (diffMonths >= monthlyRange) return;
 
                   const month = date.toLocaleString('default', { month: 'short' });
 
@@ -141,7 +141,7 @@ function AdminDashboard() {
             const lastMonths = [];
             const nowDate = new Date();
 
-            for (let i = range - 1; i >= 0; i--) {
+            for (let i = monthlyRange - 1; i >= 0; i--) {
                   const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - i, 1);
                   const m = d.toLocaleString('default', { month: 'short' });
                   lastMonths.push(m);
@@ -213,7 +213,7 @@ function AdminDashboard() {
 
             const end = new Date();
             const start = new Date();
-            start.setMonth(end.getMonth() - (range - 1));
+            start.setMonth(end.getMonth() - (monthlyRange - 1));
 
             const formatDate = (date) => {
                   const day = String(date.getDate()).padStart(2, '0');
@@ -311,8 +311,8 @@ function AdminDashboard() {
                                           <span>Monthly Trend</span>
 
                                           <select
-                                                value={range}
-                                                onChange={(e) => setRange(Number(e.target.value))}
+                                                value={monthlyRange}
+                                                onChange={(e) => setMonthlyRange(Number(e.target.value))}
                                                 className="text-sm border rounded-md px-2 py-1"
                                           >
                                                 <option value={2}>Last 2 Months</option>
