@@ -17,6 +17,48 @@ import { useNavigate } from 'react-router-dom';
 import { buildApiUrl } from '../utils/api';
 
 const TEAL = '#0d9488';
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const getDateRangeLabel = (data) => {
+      if (data.length === 0) {
+            return 'No feedback data yet';
+      }
+
+      const dates = data.map((item) => new Date(item.createdAt));
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
+
+      return `${minDate.toLocaleDateString()} - ${maxDate.toLocaleDateString()}`;
+};
+
+const getMonthlyChartData = (data, rangeInMonths) => {
+      const monthly = {};
+      const currentDate = new Date();
+      const monthLabels = [];
+
+      data.forEach((item) => {
+            const date = new Date(item.createdAt);
+            const diffMonths =
+                  (currentDate.getFullYear() - date.getFullYear()) * 12 + (currentDate.getMonth() - date.getMonth());
+
+            if (diffMonths >= rangeInMonths) {
+                  return;
+            }
+
+            const month = date.toLocaleString('default', { month: 'short' });
+            monthly[month] = (monthly[month] || 0) + 1;
+      });
+
+      for (let index = rangeInMonths - 1; index >= 0; index -= 1) {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - index, 1);
+            monthLabels.push(date.toLocaleString('default', { month: 'short' }));
+      }
+
+      return monthLabels.map((month) => ({
+            month,
+            feedback: monthly[month] || 0,
+      }));
+};
 
 function StudentDashboard() {
       const navigate = useNavigate();
@@ -30,12 +72,26 @@ function StudentDashboard() {
       const [foodRatings, setFoodRatings] = useState([]);
       const [sentimentData, setSentimentData] = useState([]);
       const [insight, setInsight] = useState('');
-      const [dateRange, setDateRange] = useState('');
-      const [range, setRange] = useState(2); // default last 2 months
+      const [overallDateRange, setOverallDateRange] = useState('');
+      const [monthlyDateRange, setMonthlyDateRange] = useState('');
+      const [range, setRange] = useState(2);
 
       useEffect(() => {
             fetchFeedback();
       }, []);
+
+      useEffect(() => {
+            setMonthlyData(getMonthlyChartData(feedbacks, range));
+            setMonthlyDateRange(getDateRangeLabel(feedbacks.slice().filter((item) => {
+                  const date = new Date(item.createdAt);
+                  const currentDate = new Date();
+                  const diffMonths =
+                        (currentDate.getFullYear() - date.getFullYear()) * 12 +
+                        (currentDate.getMonth() - date.getMonth());
+
+                  return diffMonths < range;
+            })));
+      }, [feedbacks, range]);
 
       const fetchFeedback = async () => {
             const res = await fetch(buildApiUrl('/api/feedback/analytics'));
@@ -48,94 +104,69 @@ function StudentDashboard() {
       const calculateStats = (data) => {
             let totalRating = 0;
             const itemRatings = {};
-            const monthly = {};
-            const now = new Date();
-
-            data.forEach((item) => {
-                  const date = new Date(item.createdAt);
-
-                  // ✅ FILTER BASED ON SELECTED RANGE
-                  const diffMonths = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-
-                  if (diffMonths >= range) return;
-
-                  const month = date.toLocaleString('default', { month: 'short' });
-
-                  monthly[month] = (monthly[month] || 0) + 1;
-            });
             const weekly = {};
 
-            let positive = 0,
-                  negative = 0,
-                  neutral = 0;
+            let positive = 0;
+            let negative = 0;
+            let neutral = 0;
 
             data.forEach((item) => {
                   const avg = (item.tasteRating + item.cleanlinessRating + item.staffBehaviourRating) / 3;
 
                   totalRating += avg;
 
-                  if (avg >= 4) positive++;
-                  else if (avg < 3) negative++;
-                  else neutral++;
+                  if (avg >= 4) positive += 1;
+                  else if (avg < 3) negative += 1;
+                  else neutral += 1;
 
                   if (!itemRatings[item.foodItem]) itemRatings[item.foodItem] = [];
                   itemRatings[item.foodItem].push(avg);
 
                   const date = new Date(item.createdAt);
-                  const month = date.toLocaleString('default', { month: 'short' });
                   const day = date.toLocaleString('default', { weekday: 'short' });
 
-                  monthly[month] = (monthly[month] || 0) + 1;
                   weekly[day] = (weekly[day] || 0) + 1;
             });
 
-            if (data.length > 0) {
-                  const dates = data.map((d) => new Date(d.createdAt));
-                  const min = new Date(Math.min(...dates));
-                  const max = new Date(Math.max(...dates));
+            setOverallDateRange(getDateRangeLabel(data));
+            setMonthlyData(getMonthlyChartData(data, range));
 
-                  setDateRange(`${min.toLocaleDateString()} - ${max.toLocaleDateString()}`);
-            }
+            const monthlyFilteredData = data.filter((item) => {
+                  const date = new Date(item.createdAt);
+                  const currentDate = new Date();
+                  const diffMonths =
+                        (currentDate.getFullYear() - date.getFullYear()) * 12 +
+                        (currentDate.getMonth() - date.getMonth());
 
-            // ✅ SORT MONTHS
-            const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const sortedMonthly = Object.keys(monthly)
-                  .map((m) => ({ month: m, feedback: monthly[m] }))
-                  .sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
+                  return diffMonths < range;
+            });
+            setMonthlyDateRange(getDateRangeLabel(monthlyFilteredData));
 
-            setMonthlyData(sortedMonthly);
-
-            // ✅ SORT DAYS
-            const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             const sortedWeekly = Object.keys(weekly)
-                  .map((d) => ({ day: d, feedback: weekly[d] }))
-                  .sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
+                  .map((day) => ({ day, feedback: weekly[day] }))
+                  .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day));
 
             setWeeklyData(sortedWeekly);
-
-            // SENTIMENT
-            const sentimentArr = [
+            setSentimentData([
                   { name: 'Positive', value: positive },
                   { name: 'Neutral', value: neutral },
                   { name: 'Negative', value: negative },
-            ];
+            ]);
 
-            setSentimentData(sentimentArr);
-
-            const overallAvg = (totalRating / data.length).toFixed(2);
+            const overallAvg = data.length > 0 ? (totalRating / data.length).toFixed(2) : '0.00';
             setAvgRating(overallAvg);
 
-            if (overallAvg >= 4) setInsight('🔥 Excellent performance');
-            else if (overallAvg >= 3) setInsight('⚠ Needs improvement');
-            else setInsight('🚨 Poor performance');
+            if (Number(overallAvg) >= 4) setInsight('Excellent performance');
+            else if (Number(overallAvg) >= 3) setInsight('Needs improvement');
+            else setInsight('Poor performance');
 
-            let best = '',
-                  worst = '';
-            let bestAvg = 0,
-                  worstAvg = 5;
+            let best = '';
+            let worst = '';
+            let bestAvg = 0;
+            let worstAvg = 5;
 
-            for (let item in itemRatings) {
-                  const avg = itemRatings[item].reduce((a, b) => a + b, 0) / itemRatings[item].length;
+            for (const item in itemRatings) {
+                  const avg = itemRatings[item].reduce((sum, rating) => sum + rating, 0) / itemRatings[item].length;
 
                   if (avg > bestAvg) {
                         bestAvg = avg;
@@ -154,7 +185,7 @@ function StudentDashboard() {
                   .map((food) => ({
                         food,
                         rating: parseFloat(
-                              (itemRatings[food].reduce((a, b) => a + b, 0) / itemRatings[food].length).toFixed(2),
+                              (itemRatings[food].reduce((sum, rating) => sum + rating, 0) / itemRatings[food].length).toFixed(2),
                         ),
                   }))
                   .sort((a, b) => b.rating - a.rating)
@@ -173,21 +204,18 @@ function StudentDashboard() {
 
       return (
             <div className="min-h-screen bg-gradient-to-b from-teal-100 via-white to-white px-4 sm:px-6 lg:px-8 py-6">
-                  {/* HEADER */}
                   <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-10">
                         <h1 className="text-2xl sm:text-3xl font-bold text-teal-600">Canteen Dashboard</h1>
                   </div>
 
-                  {/* KPI */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                         <GlassCard title="Total Feedback" value={feedbacks.length} />
-                        <GlassCard title="Average Rating" value={`${avgRating} ⭐`} />
+                        <GlassCard title="Average Rating" value={`${avgRating} / 5`} />
                         <GlassCard title="Best Meal" value={bestMeal} />
                         <GlassCard title="Worst Meal" value={worstMeal} color="text-red-500" />
                         <GlassCard title="Insight" value={insight} />
                   </div>
 
-                  {/* CHARTS */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10 items-stretch">
                         <ChartCard
                               title={
@@ -196,7 +224,7 @@ function StudentDashboard() {
 
                                           <select
                                                 value={range}
-                                                onChange={(e) => setRange(Number(e.target.value))}
+                                                onChange={(event) => setRange(Number(event.target.value))}
                                                 className="text-sm border rounded-md px-2 py-1"
                                           >
                                                 <option value={2}>Last 2 Months</option>
@@ -206,7 +234,7 @@ function StudentDashboard() {
                                           </select>
                                     </div>
                               }
-                              subtitle={`Showing data from: ${dateRange}`}
+                              subtitle={`Showing data from: ${monthlyDateRange}`}
                         >
                               <LineChart data={monthlyData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
@@ -217,7 +245,7 @@ function StudentDashboard() {
                               </LineChart>
                         </ChartCard>
 
-                        <ChartCard title="Weekly Trend" subtitle={`Showing data from: ${dateRange}`}>
+                        <ChartCard title="Weekly Trend" subtitle={`Showing data from: ${overallDateRange}`}>
                               <LineChart data={weeklyData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="day" stroke={TEAL} padding={{ left: 20, right: 20 }} />
@@ -227,8 +255,7 @@ function StudentDashboard() {
                               </LineChart>
                         </ChartCard>
 
-                        {/* SENTIMENT */}
-                        <ChartCard title="Feedback Sentiment" subtitle={`Showing data from: ${dateRange}`}>
+                        <ChartCard title="Feedback Sentiment" subtitle={`Showing data from: ${overallDateRange}`}>
                               <BarChart data={sentimentData}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" stroke={TEAL} />
@@ -257,8 +284,7 @@ function StudentDashboard() {
                               </BarChart>
                         </ChartCard>
 
-                        {/* TOP FOODS */}
-                        <ChartCard title="Top Rated Foods" subtitle={`Showing data from: ${dateRange}`}>
+                        <ChartCard title="Top Rated Foods" subtitle={`Showing data from: ${overallDateRange}`}>
                               <BarChart
                                     layout="vertical"
                                     data={foodRatings}
@@ -287,7 +313,6 @@ function StudentDashboard() {
       );
 }
 
-/* CARD */
 const GlassCard = ({ title, value, color = 'text-gray-800' }) => (
       <div className="bg-white rounded-2xl p-4 sm:p-6 text-center shadow hover:-translate-y-2 hover:shadow-xl transition border border-teal-50">
             <p className="text-teal-600 font-semibold">{title}</p>

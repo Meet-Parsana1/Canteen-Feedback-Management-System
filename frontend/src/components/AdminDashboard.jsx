@@ -20,11 +20,66 @@ import { useNavigate } from 'react-router-dom';
 import { buildApiUrl } from '../utils/api';
 
 const TEAL = '#0d9488';
+const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const getDateRangeLabel = (data) => {
+      if (data.length === 0) {
+            return 'No feedback data yet';
+      }
+
+      const dates = data.map((item) => new Date(item.createdAt));
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
+
+      return `${minDate.toLocaleDateString()} - ${maxDate.toLocaleDateString()}`;
+};
+
+const filterDataByMonths = (data, rangeInMonths) => {
+      const currentDate = new Date();
+
+      return data.filter((item) => {
+            const date = new Date(item.createdAt);
+            const diffMonths =
+                  (currentDate.getFullYear() - date.getFullYear()) * 12 + (currentDate.getMonth() - date.getMonth());
+
+            return diffMonths < rangeInMonths;
+      });
+};
+
+const getMonthlyChartData = (data, rangeInMonths) => {
+      const monthly = {};
+      const currentDate = new Date();
+      const monthLabels = [];
+
+      data.forEach((item) => {
+            const date = new Date(item.createdAt);
+            const diffMonths =
+                  (currentDate.getFullYear() - date.getFullYear()) * 12 + (currentDate.getMonth() - date.getMonth());
+
+            if (diffMonths >= rangeInMonths) {
+                  return;
+            }
+
+            const month = date.toLocaleString('default', { month: 'short' });
+            monthly[month] = (monthly[month] || 0) + 1;
+      });
+
+      for (let index = rangeInMonths - 1; index >= 0; index -= 1) {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - index, 1);
+            monthLabels.push(date.toLocaleString('default', { month: 'short' }));
+      }
+
+      return monthLabels.map((month) => ({
+            month,
+            feedback: monthly[month] || 0,
+      }));
+};
 
 function AdminDashboard() {
       const navigate = useNavigate();
 
       const [feedbacks, setFeedbacks] = useState([]);
+      const [analyticsData, setAnalyticsData] = useState([]);
       const [avgRating, setAvgRating] = useState(0);
       const [bestMeal, setBestMeal] = useState('');
       const [worstMeal, setWorstMeal] = useState('');
@@ -33,7 +88,8 @@ function AdminDashboard() {
       const [foodRatings, setFoodRatings] = useState([]);
       const [sentimentData, setSentimentData] = useState([]);
       const [insight, setInsight] = useState('');
-      const [dateRange, setDateRange] = useState('');
+      const [overallDateRange, setOverallDateRange] = useState('');
+      const [monthlyDateRange, setMonthlyDateRange] = useState('');
       const [page, setPage] = useState(1);
       const [totalPages, setTotalPages] = useState(1);
       const [loading, setLoading] = useState(true);
@@ -51,7 +107,12 @@ function AdminDashboard() {
 
       useEffect(() => {
             fetchFeedback();
-      }, [page, monthlyRange]);
+      }, [page]);
+
+      useEffect(() => {
+            setMonthlyData(getMonthlyChartData(analyticsData, monthlyRange));
+            setMonthlyDateRange(getDateRangeLabel(filterDataByMonths(analyticsData, monthlyRange)));
+      }, [analyticsData, monthlyRange]);
 
       const fetchFeedback = async () => {
             try {
@@ -97,8 +158,9 @@ function AdminDashboard() {
                         throw new Error('Failed to fetch dashboard analytics');
                   }
 
-                  const analyticsData = await analyticsRes.json();
-                  calculateStats(analyticsData);
+                  const analytics = await analyticsRes.json();
+                  setAnalyticsData(analytics);
+                  calculateStats(analytics);
             } catch (err) {
                   console.error(err);
                   setError(err.message || 'Unable to load dashboard');
@@ -115,23 +177,7 @@ function AdminDashboard() {
       const calculateStats = (data) => {
             let totalRating = 0;
             const itemRatings = {};
-            const monthly = {};
             const weekly = {};
-            const now = new Date();
-
-            const monthlyFilteredData = data.filter((item) => {
-                  const date = new Date(item.createdAt);
-                  const diffMonths = (now.getFullYear() - date.getFullYear()) * 12 + (now.getMonth() - date.getMonth());
-
-                  return diffMonths < monthlyRange;
-            });
-
-            monthlyFilteredData.forEach((item) => {
-                  const date = new Date(item.createdAt);
-                  const month = date.toLocaleString('default', { month: 'short' });
-
-                  monthly[month] = (monthly[month] || 0) + 1;
-            });
 
             let positive = 0;
             let negative = 0;
@@ -158,25 +204,13 @@ function AdminDashboard() {
                   weekly[day] = (weekly[day] || 0) + 1;
             });
 
-            const lastMonths = [];
-            const nowDate = new Date();
+            setOverallDateRange(getDateRangeLabel(data));
+            setMonthlyData(getMonthlyChartData(data, monthlyRange));
+            setMonthlyDateRange(getDateRangeLabel(filterDataByMonths(data, monthlyRange)));
 
-            for (let i = monthlyRange - 1; i >= 0; i -= 1) {
-                  const date = new Date(nowDate.getFullYear(), nowDate.getMonth() - i, 1);
-                  lastMonths.push(date.toLocaleString('default', { month: 'short' }));
-            }
-
-            setMonthlyData(
-                  lastMonths.map((month) => ({
-                        month,
-                        feedback: monthly[month] || 0,
-                  })),
-            );
-
-            const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             const sortedWeekly = Object.keys(weekly)
                   .map((day) => ({ day, feedback: weekly[day] }))
-                  .sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
+                  .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day));
 
             setWeeklyData(sortedWeekly);
             setSentimentData([
@@ -225,16 +259,6 @@ function AdminDashboard() {
                   .slice(0, 5);
 
             setFoodRatings(foods);
-
-            if (data.length > 0) {
-                  const dates = data.map((item) => new Date(item.createdAt));
-                  const minDate = new Date(Math.min(...dates));
-                  const maxDate = new Date(Math.max(...dates));
-
-                  setDateRange(`${minDate.toLocaleDateString()} - ${maxDate.toLocaleDateString()}`);
-            } else {
-                  setDateRange('No feedback data yet');
-            }
       };
 
       const exportExcel = () => {
@@ -369,7 +393,7 @@ function AdminDashboard() {
                                           </select>
                                     </div>
                               }
-                              subtitle={`Showing data from: ${dateRange}`}
+                              subtitle={`Showing data from: ${monthlyDateRange}`}
                         >
                               {monthlyData.length === 0 || monthlyData.every((item) => item.feedback === 0) ? (
                                     <div className="flex items-center justify-center h-full text-gray-400 text-sm">
@@ -386,7 +410,7 @@ function AdminDashboard() {
                               )}
                         </ChartCard>
 
-                        <ChartCard title="Weekly Trend" subtitle={`Showing data from: ${dateRange}`}>
+                        <ChartCard title="Weekly Trend" subtitle={`Showing data from: ${overallDateRange}`}>
                               <LineChart data={weeklyData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="day" stroke={TEAL} padding={{ left: 20, right: 20 }} />
@@ -396,7 +420,7 @@ function AdminDashboard() {
                               </LineChart>
                         </ChartCard>
 
-                        <ChartCard title="Feedback Sentiment" subtitle={`Showing data from: ${dateRange}`}>
+                        <ChartCard title="Feedback Sentiment" subtitle={`Showing data from: ${overallDateRange}`}>
                               <BarChart data={sentimentData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" stroke={TEAL} />
@@ -409,8 +433,8 @@ function AdminDashboard() {
                                                       entry.name === 'Positive'
                                                             ? '#22c55e'
                                                             : entry.name === 'Negative'
-                                                                  ? '#ef4444'
-                                                                  : '#facc15';
+                                                              ? '#ef4444'
+                                                              : '#facc15';
 
                                                 return <Cell key={index} fill={color} />;
                                           })}
@@ -425,7 +449,7 @@ function AdminDashboard() {
                               </BarChart>
                         </ChartCard>
 
-                        <ChartCard title="Top Rated Food" subtitle={`Showing data from: ${dateRange}`}>
+                        <ChartCard title="Top Rated Food" subtitle={`Showing data from: ${overallDateRange}`}>
                               <BarChart layout="vertical" data={foodRatings} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
                                     <XAxis type="number" domain={[0, 5]} stroke={TEAL} />
                                     <YAxis type="category" dataKey="food" stroke={TEAL} width={95} tick={{ fontSize: 14 }} />
