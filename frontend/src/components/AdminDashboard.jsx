@@ -25,7 +25,7 @@ const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const formatDate = (date) => {
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = String(date.getFullYear()).slice(-2);
+      const year = String(date.getFullYear());
 
       return `${day}/${month}/${year}`;
 };
@@ -83,6 +83,14 @@ const getMonthlyChartData = (data, rangeInMonths) => {
       }));
 };
 
+const getMonthlyWindowRangeLabel = (rangeInMonths) => {
+      const endDate = new Date();
+      const startDate = new Date(endDate);
+      startDate.setMonth(endDate.getMonth() - (rangeInMonths - 1));
+
+      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+};
+
 function AdminDashboard() {
       const navigate = useNavigate();
 
@@ -119,7 +127,7 @@ function AdminDashboard() {
 
       useEffect(() => {
             setMonthlyData(getMonthlyChartData(analyticsData, monthlyRange));
-            setMonthlyDateRange(getDateRangeLabel(filterDataByMonths(analyticsData, monthlyRange)));
+            setMonthlyDateRange(getMonthlyWindowRangeLabel(monthlyRange));
       }, [analyticsData, monthlyRange]);
 
       const fetchFeedback = async () => {
@@ -214,7 +222,7 @@ function AdminDashboard() {
 
             setOverallDateRange(getDateRangeLabel(data));
             setMonthlyData(getMonthlyChartData(data, monthlyRange));
-            setMonthlyDateRange(getDateRangeLabel(filterDataByMonths(data, monthlyRange)));
+            setMonthlyDateRange(getMonthlyWindowRangeLabel(monthlyRange));
 
             const sortedWeekly = Object.keys(weekly)
                   .map((day) => ({ day, feedback: weekly[day] }))

@@ -22,7 +22,7 @@ const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const formatDate = (date) => {
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = String(date.getFullYear()).slice(-2);
+      const year = String(date.getFullYear());
 
       return `${day}/${month}/${year}`;
 };
@@ -68,6 +68,14 @@ const getMonthlyChartData = (data, rangeInMonths) => {
       }));
 };
 
+const getMonthlyWindowRangeLabel = (rangeInMonths) => {
+      const endDate = new Date();
+      const startDate = new Date(endDate);
+      startDate.setMonth(endDate.getMonth() - (rangeInMonths - 1));
+
+      return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+};
+
 function StudentDashboard() {
       const navigate = useNavigate();
 
@@ -90,15 +98,7 @@ function StudentDashboard() {
 
       useEffect(() => {
             setMonthlyData(getMonthlyChartData(feedbacks, range));
-            setMonthlyDateRange(getDateRangeLabel(feedbacks.slice().filter((item) => {
-                  const date = new Date(item.createdAt);
-                  const currentDate = new Date();
-                  const diffMonths =
-                        (currentDate.getFullYear() - date.getFullYear()) * 12 +
-                        (currentDate.getMonth() - date.getMonth());
-
-                  return diffMonths < range;
-            })));
+            setMonthlyDateRange(getMonthlyWindowRangeLabel(range));
       }, [feedbacks, range]);
 
       const fetchFeedback = async () => {
@@ -138,17 +138,7 @@ function StudentDashboard() {
 
             setOverallDateRange(getDateRangeLabel(data));
             setMonthlyData(getMonthlyChartData(data, range));
-
-            const monthlyFilteredData = data.filter((item) => {
-                  const date = new Date(item.createdAt);
-                  const currentDate = new Date();
-                  const diffMonths =
-                        (currentDate.getFullYear() - date.getFullYear()) * 12 +
-                        (currentDate.getMonth() - date.getMonth());
-
-                  return diffMonths < range;
-            });
-            setMonthlyDateRange(getDateRangeLabel(monthlyFilteredData));
+            setMonthlyDateRange(getMonthlyWindowRangeLabel(range));
 
             const sortedWeekly = Object.keys(weekly)
                   .map((day) => ({ day, feedback: weekly[day] }))
