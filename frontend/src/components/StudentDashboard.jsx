@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 
 import { useNavigate } from 'react-router-dom';
+import { buildApiUrl } from '../utils/api';
 
 const TEAL = '#0d9488';
 
@@ -37,7 +38,7 @@ function StudentDashboard() {
       }, []);
 
       const fetchFeedback = async () => {
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/feedback/analytics`);
+            const res = await fetch(buildApiUrl('/api/feedback/analytics'));
 
             const data = await res.json();
             setFeedbacks(data);

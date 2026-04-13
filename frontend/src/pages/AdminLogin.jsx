@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { buildApiUrl } from "../utils/api";
 
 function AdminLogin() {
 
@@ -14,7 +15,7 @@ function AdminLogin() {
 
             try {
 
-                  const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/login`, {
+                  const res = await fetch(buildApiUrl("/api/admin/login"), {
                         method: "POST",
                         headers: {
                               "Content-Type": "application/json"

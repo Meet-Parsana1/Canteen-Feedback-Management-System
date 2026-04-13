@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FaStar, FaUtensils } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import DuplicateFeedbackModal from './DuplicateFeedbackModal';
+import { buildApiUrl } from '../utils/api';
 
 function FeedbackForm() {
       const navigate = useNavigate();
@@ -77,7 +78,7 @@ function FeedbackForm() {
 
             const submitFeedback = async (retry = false) => {
                   try {
-                        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/feedback`, {
+                        const response = await fetch(buildApiUrl('/api/feedback'), {
                               method: 'POST',
                               headers: {
                                     'Content-Type': 'application/json',
