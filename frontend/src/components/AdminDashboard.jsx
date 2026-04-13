@@ -20,7 +20,6 @@ import { useNavigate } from 'react-router-dom';
 import { buildApiUrl } from '../utils/api';
 
 const TEAL = '#0d9488';
-const DAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const formatDate = (date) => {
       const day = String(date.getDate()).padStart(2, '0');
@@ -91,6 +90,45 @@ const getMonthlyWindowRangeLabel = (rangeInMonths) => {
       return `${formatDate(startDate)} - ${formatDate(endDate)}`;
 };
 
+const getWeeklyChartData = (data) => {
+      const labels = [];
+      const counts = {};
+      const endDate = new Date();
+      endDate.setHours(23, 59, 59, 999);
+
+      const startDate = new Date(endDate);
+      startDate.setDate(endDate.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+
+      for (let offset = 0; offset < 7; offset += 1) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + offset);
+
+            const label = date.toLocaleString('default', { weekday: 'short' });
+            labels.push({ label, dateKey: date.toDateString() });
+            counts[date.toDateString()] = 0;
+      }
+
+      data.forEach((item) => {
+            const date = new Date(item.createdAt);
+
+            if (date < startDate || date > endDate) {
+                  return;
+            }
+
+            const dateKey = date.toDateString();
+            counts[dateKey] = (counts[dateKey] || 0) + 1;
+      });
+
+      return {
+            data: labels.map(({ label, dateKey }) => ({
+                  day: label,
+                  feedback: counts[dateKey] || 0,
+            })),
+            rangeLabel: `${formatDate(startDate)} - ${formatDate(endDate)}`,
+      };
+};
+
 function AdminDashboard() {
       const navigate = useNavigate();
 
@@ -106,6 +144,7 @@ function AdminDashboard() {
       const [insight, setInsight] = useState('');
       const [overallDateRange, setOverallDateRange] = useState('');
       const [monthlyDateRange, setMonthlyDateRange] = useState('');
+      const [weeklyDateRange, setWeeklyDateRange] = useState('');
       const [page, setPage] = useState(1);
       const [totalPages, setTotalPages] = useState(1);
       const [loading, setLoading] = useState(true);
@@ -193,7 +232,6 @@ function AdminDashboard() {
       const calculateStats = (data) => {
             let totalRating = 0;
             const itemRatings = {};
-            const weekly = {};
 
             let positive = 0;
             let negative = 0;
@@ -214,21 +252,14 @@ function AdminDashboard() {
 
                   itemRatings[item.foodItem].push(avg);
 
-                  const date = new Date(item.createdAt);
-                  const day = date.toLocaleString('default', { weekday: 'short' });
-
-                  weekly[day] = (weekly[day] || 0) + 1;
             });
 
             setOverallDateRange(getDateRangeLabel(data));
             setMonthlyData(getMonthlyChartData(data, monthlyRange));
             setMonthlyDateRange(getMonthlyWindowRangeLabel(monthlyRange));
-
-            const sortedWeekly = Object.keys(weekly)
-                  .map((day) => ({ day, feedback: weekly[day] }))
-                  .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day));
-
-            setWeeklyData(sortedWeekly);
+            const weeklyChart = getWeeklyChartData(data);
+            setWeeklyData(weeklyChart.data);
+            setWeeklyDateRange(weeklyChart.rangeLabel);
             setSentimentData([
                   { name: 'Positive', value: positive },
                   { name: 'Neutral', value: neutral },
@@ -426,7 +457,7 @@ function AdminDashboard() {
                               )}
                         </ChartCard>
 
-                        <ChartCard title="Weekly Trend" subtitle={`Showing data from: ${overallDateRange}`}>
+                        <ChartCard title="Weekly Trend" subtitle={`Showing data from: ${weeklyDateRange}`}>
                               <LineChart data={weeklyData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="day" stroke={TEAL} padding={{ left: 20, right: 20 }} />
