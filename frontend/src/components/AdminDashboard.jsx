@@ -32,7 +32,7 @@ function AdminDashboard() {
       const [foodRatings, setFoodRatings] = useState([]);
       const [sentimentData, setSentimentData] = useState([]);
       const [insight, setInsight] = useState('');
-      const [dateRange, setDateRange] = useState('');
+      // const [dateRange, setDateRange] = useState('');
       const [page, setPage] = useState(1);
       const [totalPages, setTotalPages] = useState(1);
       const [loading, setLoading] = useState(true);
@@ -229,7 +229,8 @@ function AdminDashboard() {
                   return `${day}/${month}/${year}`;
             };
 
-            setDateRange(`${formatDate(start)} - ${formatDate(end)}`);
+            // setDateRange(`${formatDate(start)} - ${formatDate(end)}`);
+            const monthlyDateRange = `${formatDate(start)} - ${formatDate(end)}`;
       };
 
       const exportExcel = () => {
