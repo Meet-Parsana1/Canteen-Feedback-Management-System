@@ -3,6 +3,8 @@ import { FaStar, FaUtensils } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import DuplicateFeedbackModal from './DuplicateFeedbackModal';
 import { buildApiUrl } from '../utils/api';
+import CanteenLoader from './CanteenLoader';
+import Toast from './Toast';
 
 function FeedbackForm() {
       const navigate = useNavigate();
@@ -16,7 +18,7 @@ function FeedbackForm() {
       });
 
       const [loading, setLoading] = useState(false);
-      const [toast, setToast] = useState({ show: false, message: '', type: '' });
+      const [toast, setToast] = useState(null); // { message, type }
       const [taste, setTaste] = useState(0);
       const [cleanliness, setCleanliness] = useState(0);
       const [staff, setStaff] = useState(0);
@@ -105,15 +107,14 @@ function FeedbackForm() {
 
                         if (response.ok) {
                               setToast({
-                                    show: true,
-                                    message: 'Feedback submitted successfully!',
+                                    message: 'Feedback submitted successfully! Thank you.',
                                     type: 'success',
                               });
 
                               // slight delay for UX
                               setTimeout(() => {
                                     navigate('/thank-you');
-                              }, 800);
+                              }, 1000);
                         } else {
                               throw new Error(data.message || 'Submission failed');
                         }
@@ -121,13 +122,12 @@ function FeedbackForm() {
                         console.error(error);
 
                         if (!retry) {
-                              // 🔁 Retry once automatically
+                              // Retry once automatically
                               return submitFeedback(true);
                         }
 
                         setToast({
-                              show: true,
-                              message: 'Failed to submit. Please try again.',
+                              message: 'Failed to submit feedback. Please try again.',
                               type: 'error',
                         });
 
@@ -166,83 +166,97 @@ function FeedbackForm() {
             'w-full border rounded-xl px-4 py-2 sm:py-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 focus:outline-none';
 
       return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4 py-6 sm:px-6 lg:px-8 relative">
+                  {toast && (
+                        <Toast
+                              message={toast.message}
+                              type={toast.type}
+                              onClose={() => setToast(null)}
+                        />
+                  )}
+
                   <div className="bg-white shadow-xl rounded-2xl p-5 sm:p-6 lg:p-8 w-full max-w-md sm:max-w-lg">
                         <div className="flex justify-center mb-2">
                               <FaUtensils className="text-teal-600 text-4xl mb-1" />
                         </div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-center text-teal-600 mb-2">
-                              Marwadi University
+                        <h1 className="text-xl sm:text-2xl font-bold text-center text-teal-600 mb-1">
+                              CanteenIQ
                         </h1>
 
-                        <p className="text-center text-gray-500 mb-6">Canteen Feedback Portal</p>
+                        <p className="text-center text-gray-500 mb-6 text-sm">Canteen Feedback Portal</p>
 
-                        <form className="space-y-5" onSubmit={handleSubmit}>
-                              {/* Name */}
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                              {/* NAME */}
                               <div>
-                                    <label className="block text-sm font-medium mb-1">Name (Optional)</label>
+                                    <label className="text-gray-600 text-sm">
+                                          Name <span className="text-gray-400 text-xs">(Optional)</span>
+                                    </label>
                                     <input
                                           type="text"
                                           name="name"
+                                          placeholder="Enter your name"
                                           value={formData.name}
                                           onChange={handleChange}
-                                          placeholder="Enter your name"
-                                          className={`${inputStyle} border-gray-300`}
+                                          className={inputStyle}
                                     />
                               </div>
 
-                              {/* Enrollment */}
+                              {/* ENROLLMENT */}
                               <div>
-                                    <label className="block text-sm font-medium mb-1">Enrollment Number *</label>
+                                    <label className="text-gray-600 text-sm">
+                                          Enrollment Number <span className="text-red-500">*</span>
+                                    </label>
                                     <input
                                           type="text"
                                           name="enrollmentNumber"
+                                          placeholder="11-digit enrollment number"
                                           value={formData.enrollmentNumber}
                                           onChange={handleChange}
-                                          placeholder="Enter 11-digit enrollment number"
-                                          className={`${inputStyle} ${
-                                                errors.enrollment ? 'border-red-500' : 'border-gray-300'
-                                          }`}
+                                          className={inputStyle}
                                     />
-                                    {errors.enrollment && (
-                                          <p className="text-red-500 text-sm mt-1">{errors.enrollment}</p>
-                                    )}
+                                    {errors.enrollment && <p className="text-red-500 text-sm mt-1">{errors.enrollment}</p>}
                               </div>
 
-                              {/* Food Item */}
+                              {/* FOOD ITEM */}
                               <div>
-                                    <label className="block text-sm font-medium mb-1">Food Item</label>
-
+                                    <label className="text-gray-600 text-sm">
+                                          Food Item <span className="text-red-500">*</span>
+                                    </label>
                                     <select
                                           name="foodItem"
                                           value={formData.foodItem}
                                           onChange={handleChange}
-                                          className={`${inputStyle} ${
-                                                errors.foodItem ? 'border-red-500' : 'border-gray-300'
-                                          }`}
+                                          className={inputStyle}
                                     >
-                                          <option value="">Select Item</option>
+                                          <option value="">Select food item</option>
+                                          <option value="Thali">Thali</option>
+                                          <option value="Samosa">Samosa</option>
+                                          <option value="Dosa">Dosa</option>
+                                          <option value="Sandwich">Sandwich</option>
+                                          <option value="Pizza">Pizza</option>
+                                          <option value="Burger">Burger</option>
+                                          <option value="Tea/Coffee">Tea/Coffee</option>
                                           <option value="Breakfast">Breakfast</option>
                                           <option value="Lunch">Lunch</option>
                                           <option value="Dinner">Dinner</option>
                                           <option value="Other">Other</option>
                                     </select>
-
                                     {errors.foodItem && <p className="text-red-500 text-sm mt-1">{errors.foodItem}</p>}
                               </div>
 
-                              {/* Custom Food Input */}
+                              {/* OTHER FOOD INPUT */}
                               {formData.foodItem === 'Other' && (
                                     <div>
+                                          <label className="text-gray-600 text-sm">
+                                                Specify Food Item <span className="text-red-500">*</span>
+                                          </label>
                                           <input
                                                 type="text"
                                                 name="customFoodItem"
+                                                placeholder="Enter food name"
                                                 value={formData.customFoodItem}
                                                 onChange={handleChange}
-                                                placeholder="Enter food item"
-                                                className={`${inputStyle} ${
-                                                      errors.customFoodItem ? 'border-red-500' : 'border-gray-300'
-                                                }`}
+                                                className={inputStyle}
                                           />
                                           {errors.customFoodItem && (
                                                 <p className="text-red-500 text-sm mt-1">{errors.customFoodItem}</p>
@@ -250,64 +264,74 @@ function FeedbackForm() {
                                     </div>
                               )}
 
-                              {/* Taste */}
-                              <div>
-                                    <label className="block text-sm font-medium">Taste Rating</label>
-                                    <StarRating rating={taste} setRating={setTaste} error={errors.taste} />
+                              {/* RATINGS */}
+                              <div className="space-y-3 pt-2">
+                                    <div>
+                                          <label className="text-gray-600 text-sm font-medium">
+                                                Taste Rating <span className="text-red-500">*</span>
+                                          </label>
+                                          <StarRating rating={taste} setRating={setTaste} error={errors.taste} />
+                                    </div>
+
+                                    <div>
+                                          <label className="text-gray-600 text-sm font-medium">
+                                                Cleanliness Rating <span className="text-red-500">*</span>
+                                          </label>
+                                          <StarRating
+                                                rating={cleanliness}
+                                                setRating={setCleanliness}
+                                                error={errors.cleanliness}
+                                          />
+                                    </div>
+
+                                    <div>
+                                          <label className="text-gray-600 text-sm font-medium">
+                                                Staff Behaviour Rating <span className="text-red-500">*</span>
+                                          </label>
+                                          <StarRating rating={staff} setRating={setStaff} error={errors.staff} />
+                                    </div>
                               </div>
 
-                              {/* Cleanliness */}
-                              <div>
-                                    <label className="block text-sm font-medium">Cleanliness Rating</label>
-                                    <StarRating
-                                          rating={cleanliness}
-                                          setRating={setCleanliness}
-                                          error={errors.cleanliness}
-                                    />
-                              </div>
-
-                              {/* Staff */}
-                              <div>
-                                    <label className="block text-sm font-medium">Staff Behaviour Rating</label>
-                                    <StarRating rating={staff} setRating={setStaff} error={errors.staff} />
-                              </div>
-
-                              {/* Comments */}
-                              <div>
-                                    <label className="block text-sm font-medium mb-1">Comments</label>
+                              {/* COMMENT */}
+                              <div className="pt-2">
+                                    <label className="text-gray-600 text-sm">
+                                          Comments <span className="text-gray-400 text-xs">(Optional)</span>
+                                    </label>
                                     <textarea
                                           name="comment"
+                                          rows="3"
+                                          placeholder="Share your thoughts..."
                                           value={formData.comment}
                                           onChange={handleChange}
-                                          placeholder="Write your feedback..."
-                                          className={`${inputStyle} border-gray-300 min-h-[100px]`}
+                                          className={inputStyle}
                                     />
                               </div>
 
+                              {/* SUBMIT BUTTON */}
                               <button
                                     type="submit"
                                     disabled={loading || showDuplicateModal}
-                                    className={`w-full py-2.5 sm:py-3 rounded-xl text-sm sm:text-base transition
-      ${loading || showDuplicateModal ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 text-white'}`}
+                                    className={`w-full py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition
+       ${loading || showDuplicateModal ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 text-white shadow hover:shadow-md'}`}
                               >
                                     {loading ? 'Submitting...' : 'Submit Feedback'}
                               </button>
                         </form>
                   </div>
+
+                  {loading && (
+                        <CanteenLoader
+                              fullScreen={true}
+                              text="Submitting Your Feedback..."
+                              subtext="Recording your taste, cleanliness & service scores..."
+                        />
+                  )}
+
                   {showDuplicateModal && (
                         <DuplicateFeedbackModal
                               nextAllowedAt={nextAllowedAt}
                               onClose={() => setShowDuplicateModal(false)}
                         />
-                  )}
-
-                  {toast.show && (
-                        <div
-                              className={`fixed bottom-5 right-5 px-4 py-3 rounded-lg shadow-lg text-white
-            ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
-                        >
-                              {toast.message}
-                        </div>
                   )}
             </div>
       );

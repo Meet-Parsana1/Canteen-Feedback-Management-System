@@ -17,11 +17,10 @@ router.get('/', protect, async (req, res) => {
 
             if (food) filter.foodItem = food;
 
-            if (startDate && endDate) {
-                  filter.createdAt = {
-                        $gte: new Date(startDate),
-                        $lte: new Date(endDate),
-                  };
+            if (startDate || endDate) {
+                  filter.createdAt = {};
+                  if (startDate) filter.createdAt.$gte = new Date(startDate);
+                  if (endDate) filter.createdAt.$lte = new Date(endDate);
             }
 
             const total = await Feedback.countDocuments(filter);

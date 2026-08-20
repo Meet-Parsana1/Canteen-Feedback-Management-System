@@ -1,20 +1,26 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../utils/api";
+import CanteenLoader from "../components/CanteenLoader";
+import Toast from "../components/Toast";
 
 function AdminLogin() {
-
       const [email, setEmail] = useState("");
       const [password, setPassword] = useState("");
+      const [loading, setLoading] = useState(false);
+      const [toast, setToast] = useState(null); // { message, type }
 
       const navigate = useNavigate();
 
-      const handleLogin = async (e) => {
+      const showToast = (message, type = "info") => {
+            setToast({ message, type });
+      };
 
+      const handleLogin = async (e) => {
             e.preventDefault();
+            setLoading(true);
 
             try {
-
                   const res = await fetch(buildApiUrl("/api/admin/login"), {
                         method: "POST",
                         headers: {
@@ -26,51 +32,55 @@ function AdminLogin() {
                   const data = await res.json();
 
                   if (res.ok) {
-
                         localStorage.setItem("adminToken", data.token);
-
-                        alert("Login successful");
-
-                        navigate("/admin");
-
+                        showToast("Login successful! Welcome back.", "success");
+                        setTimeout(() => {
+                              navigate("/admin");
+                        }, 1200);
                   } else {
-
-                        alert(data.message);
-
+                        showToast(data.message || "Invalid credentials. Please try again.", "error");
                   }
-
             } catch (error) {
-
                   console.error(error);
-
-                  alert("Server error");
-
+                  showToast("Server error. Please try again later.", "error");
+            } finally {
+                  setLoading(false);
             }
-
       };
 
       return (
-            <div className="min-h-screen flex flex-col md:flex-row">
+            <div className="min-h-screen flex flex-col md:flex-row relative">
+                  {/* Custom Toast Notification */}
+                  {toast && (
+                        <Toast
+                              message={toast.message}
+                              type={toast.type}
+                              onClose={() => setToast(null)}
+                        />
+                  )}
+
+                  {loading && (
+                        <CanteenLoader
+                              fullScreen={true}
+                              text="Authenticating Admin..."
+                              subtext="Verifying credentials & loading canteen analytics console..."
+                        />
+                  )}
 
                   {/* LEFT PANEL */}
                   <div className="hidden md:flex md:w-1/2 flex-col justify-center items-center bg-gradient-to-br from-primary to-primaryDark text-white px-6 lg:px-12 py-10">
-
                         <h1 className="text-3xl lg:text-4xl font-bold mb-6 text-center">
                               Canteen Analytics
                         </h1>
-
                         <p className="text-sm lg:text-lg text-center max-w-md leading-relaxed">
                               Monitor feedback trends and improve canteen
                               food quality using real student insights.
                         </p>
-
                   </div>
 
                   {/* RIGHT PANEL */}
                   <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-primaryLight via-white to-primaryLight px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-
                         <div className="bg-white shadow-xl rounded-3xl p-6 sm:p-8 lg:p-10 w-full max-w-md border border-primaryLight hover:scale-[1.02] transition-transform">
-
                               {/* MOBILE HEADER */}
                               <div className="md:hidden text-center mb-6">
                                     <h1 className="text-xl font-bold text-primary">
@@ -86,7 +96,6 @@ function AdminLogin() {
                               </h2>
 
                               <form onSubmit={handleLogin} className="space-y-4">
-
                                     {/* EMAIL */}
                                     <div>
                                           <label className="text-gray-600 text-sm">Email</label>
@@ -116,11 +125,11 @@ function AdminLogin() {
                                     {/* BUTTON */}
                                     <button
                                           type="submit"
-                                          className="w-full bg-primary text-white py-2.5 sm:py-3 rounded-xl hover:bg-primaryDark transition shadow text-sm sm:text-base"
+                                          disabled={loading}
+                                          className="w-full bg-primary text-white py-2.5 sm:py-3 rounded-xl hover:bg-primaryDark transition shadow text-sm sm:text-base disabled:opacity-50"
                                     >
-                                          Login
+                                          {loading ? "Authenticating..." : "Login"}
                                     </button>
-
                               </form>
 
                               {/* SIGNUP LINK */}
@@ -130,7 +139,6 @@ function AdminLogin() {
                                           Sign Up
                                     </Link>
                               </p>
-
                         </div>
                   </div>
             </div>
