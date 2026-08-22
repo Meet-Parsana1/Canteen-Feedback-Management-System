@@ -43,35 +43,27 @@ function DuplicateFeedbackModal({ nextAllowedAt, onClose }) {
 
       return (
 
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-
-                  <div className="bg-white rounded-2xl shadow-2xl p-8 w-[380px] text-center border border-primaryLight animate-fadeIn">
-
-                        <h2 className="text-2xl font-bold text-red-500 mb-4">
+            <div className="fixed inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm z-50 p-4 animate-fadeIn">
+                  <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-sm text-center border border-teal-100 animate-scaleUp">
+                        <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-xl mx-auto mb-3 shadow-inner">
+                              ⏱
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 mb-2">
                               Feedback Already Submitted
                         </h2>
-
-                        <p className="text-gray-600 mb-6">
-                              You can submit feedback again after 24 hours.
+                        <p className="text-slate-600 text-xs sm:text-sm mb-4 leading-relaxed">
+                              You have already reviewed this canteen today. To prevent review flooding, you can submit again in:
                         </p>
-
-                        <p className="text-gray-500 mb-2">
-                              You can submit feedback again in:
-                        </p>
-
-                        <div className="text-3xl font-bold text-primary tracking-widest mb-6">
+                        <div className="text-2xl sm:text-3xl font-extrabold text-teal-600 font-mono tracking-widest bg-teal-50 py-3 px-4 rounded-2xl border border-teal-200/80 mb-6 shadow-inner">
                               {timeLeft}
                         </div>
-
                         <button
                               onClick={onClose}
-                              className="bg-primary text-white px-6 py-2 rounded-xl hover:bg-primaryDark transition"
+                              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md hover:shadow-lg"
                         >
-                              OK
+                              Understood
                         </button>
-
                   </div>
-
             </div>
 
       );
