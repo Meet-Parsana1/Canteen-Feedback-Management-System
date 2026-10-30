@@ -195,13 +195,13 @@ Make sure you have the following installed or available:
 Open your terminal and run:
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone https://github.com/Meet-Parsana1/Canteen-Feedback-Management-System
 ```
 
 Navigate into the cloned repository:
 
 ```bash
-cd <YOUR_PROJECT_DIRECTORY>
+cd Canteen-Feedback-Management-System
 ```
 
 Replace the placeholders with your actual GitHub repository URL and project directory name.
