@@ -17,6 +17,8 @@ A web-based platform designed to simplify student feedback collection, improve c
 
 **Student-Friendly • Data-Driven • Responsive • Practical**
 
+**Web Link:** [Visit CanteenIQ]( https://canteen-feedback-management-system.vercel.app/)
+
 </div>
 
 ---
